@@ -4,19 +4,31 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 200f;
+    [SerializeField] Animator animator;
+    [SerializeField] float speedChange = -0.1f;
     Rigidbody myRigidBody;
     Vector2 input;
+    ChunkGeneration chunkGeneration;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         myRigidBody = GetComponent<Rigidbody>();
         Vector3 initialPosition = transform.position;
+        chunkGeneration = FindFirstObjectByType<ChunkGeneration>();
     }
 
     // Update is called once per frame
     void Update()
     {
         
+    }
+
+    private void OnCollisionEnter(Collision other)
+    {
+        if (other.gameObject.name == "Cube") return;
+        animator.SetTrigger("Hit");
+        chunkGeneration.SpeedUpLevel(speedChange);
+
     }
 
 
@@ -40,6 +52,7 @@ public class PlayerMovement : MonoBehaviour
         if (input != origin)
         {
             myRigidBody.MovePosition(finalPosition);
+            
         }
     }
 

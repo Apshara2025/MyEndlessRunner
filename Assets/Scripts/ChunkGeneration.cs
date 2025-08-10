@@ -6,6 +6,7 @@ using UnityEngine;
 public class ChunkGeneration : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
+    
     [SerializeField] int numberOfStartingChunks = 12;
     [SerializeField] float heightOfFence = 10f;
     [SerializeField] GameObject chunkPrefab;
@@ -14,10 +15,19 @@ public class ChunkGeneration : MonoBehaviour
     [SerializeField] GameObject fence;
     [SerializeField] float fenceSpawnChance = 0.5f;
     [SerializeField] GameObject coin;
+    [SerializeField] GameObject apple;
     [SerializeField] float coinSpawnChance = 0.5f;
+    [SerializeField] float heightOfApple = 1f;
+    [SerializeField] float minimumTranslationSpeed = 0.2f;
+    [SerializeField] float maximumTranslationSpeed = 3f;
+    [SerializeField] ParticleSystem particleSystem;
+    SpeedUpCinemachineCamera speedUpCinemachineCamera;
     float chunkLength = 10f;
-    float translationSpeed = 0.5f;
+    [SerializeField] float translationSpeed = 0.5f;
     float heightOfCoin = 1f;
+
+    
+    bool coinsSpawned = false;
     //int index = 0;
     List<float> lanes = new List<float> { -2.5f, 0, 2.5f };
     List<float> emptyLanes = new List<float> { -2.5f, 0f, 2.5f};
@@ -26,7 +36,7 @@ public class ChunkGeneration : MonoBehaviour
     void Start()
     {
         GenerateChunks();
-        
+        speedUpCinemachineCamera = FindFirstObjectByType<SpeedUpCinemachineCamera>();
         // MoveChunks();
     }
 
@@ -38,6 +48,18 @@ public class ChunkGeneration : MonoBehaviour
         DestroyAndAddChunk();
         //GenerateFences();
         //DeleteChunk();
+    }
+
+    public void SpeedUpLevel(float speedChange)
+    {
+
+        translationSpeed = Mathf.Clamp(translationSpeed + speedChange, minimumTranslationSpeed, maximumTranslationSpeed);
+        Physics.gravity = new Vector3(Physics.gravity.x, Physics.gravity.y, Physics.gravity.z - speedChange);
+        speedUpCinemachineCamera.ChangeFOV(speedChange);
+        if (speedChange > 0)
+        {
+            particleSystem.Play();
+        }
     }
 
     void GenerateChunks()
@@ -54,15 +76,17 @@ public class ChunkGeneration : MonoBehaviour
                 if (numberOfAvailableLanes == 1) break;
                 if (Random.value > fenceSpawnChance) continue;
                 //int selectedLane = Random.Range(0, 3);
-                emptyLanes[j] = 0;
+                emptyLanes[j] = 1;
                 numberOfAvailableLanes--;
                 Vector3 fenceSpawnPosition = new Vector3(lanes[j], chunkObject.transform.position.y + heightOfFence, chunkObject.transform.position.z);
                 GameObject fenceInstantiated = Instantiate(fence, fenceSpawnPosition, Quaternion.identity);
                 fenceInstantiated.transform.parent = chunkObject.transform;
             }
             int randomIndex = Random.Range(0, 3);
-            if (emptyLanes[randomIndex] != 0)
+            //coinsSpawned = false;
+            if (emptyLanes[randomIndex] != 1)
             {
+                coinsSpawned = true;
                 for (int k = 0; k < 5; k++)
                 {
                     if (Random.value < coinSpawnChance)
@@ -70,8 +94,16 @@ public class ChunkGeneration : MonoBehaviour
                         Vector3 coinSpawnPosition = new Vector3(emptyLanes[randomIndex], chunkObject.transform.position.y + heightOfCoin, chunkObject.transform.position.z + 4f - 2f * k);
                         Instantiate(coin, coinSpawnPosition, Quaternion.identity, chunkObject.transform);
                     }
-                }   
+                }
+                emptyLanes[randomIndex] = 1;
             }
+            int randomAppleIndex = Random.Range(0, 3);
+            if (emptyLanes[randomAppleIndex] != 1)
+            {
+                Vector3 appleSpawnPosition = new Vector3(emptyLanes[randomAppleIndex], chunkObject.transform.position.y + heightOfApple, chunkObject.transform.position.z);
+                Instantiate(apple, appleSpawnPosition, Quaternion.identity, chunkObject.transform);
+            }
+            
         }
     }
 
@@ -88,7 +120,7 @@ public class ChunkGeneration : MonoBehaviour
 
     void DestroyAndAddChunk()
     {
-        if (chunkPrefabs[0].transform.position.z < Camera.main.transform.position.z + chunkLength / 40)
+        if (chunkPrefabs[0].transform.position.z < Camera.main.transform.position.z - chunkLength )
         {
             Destroy(chunkPrefabs[0]);
             chunkPrefabs.RemoveAt(0);
@@ -104,14 +136,14 @@ public class ChunkGeneration : MonoBehaviour
                 if (Random.value > fenceSpawnChance) continue;
                 //int selectedLane = Random.Range(0, 3);
                 //emptyLanes.RemoveAt(j);
-                emptyLanes[j] = 0;
+                emptyLanes[j] = 1;
                 numberOfAvailableLanes--;
                 Vector3 fenceSpawnPosition = new Vector3(lanes[j], AddedChunkPrefab.transform.position.y + heightOfFence, AddedChunkPrefab.transform.position.z);
                 GameObject fenceInstantiated = Instantiate(fence, fenceSpawnPosition, Quaternion.identity);
                 fenceInstantiated.transform.parent = AddedChunkPrefab.transform;
             }
             int randomIndex = Random.Range(0, 3);
-            if (emptyLanes[randomIndex] != 0)
+            if (emptyLanes[randomIndex] != 1)
             {
                 for (int k = 0; k < 5; k++)
                 {
@@ -122,6 +154,13 @@ public class ChunkGeneration : MonoBehaviour
                     }
 
                 }
+                emptyLanes[randomIndex] = 1;
+            }
+            int randomAppleIndex = Random.Range(0, 3);
+            if (emptyLanes[randomAppleIndex] != 1)
+            {
+                Vector3 appleSpawnPosition = new Vector3(emptyLanes[randomAppleIndex], AddedChunkPrefab.transform.position.y + heightOfApple, AddedChunkPrefab.transform.position.z);
+                Instantiate(apple, appleSpawnPosition, Quaternion.identity, AddedChunkPrefab.transform);
             }
 
         }
